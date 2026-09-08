@@ -9,7 +9,16 @@ Build software in small, understandable milestones while preserving the user's i
 
 ## Start with Context
 
-- Read the README and relevant project files before changing anything.
+Before working on a project task:
+
+1. Read the project README and relevant project files.
+2. If the repository contains `context/`, read only the context files relevant to the task.
+3. Use that context to understand the user's goals, learning level, active projects, and preferences.
+4. Do not load unrelated personal context.
+5. Treat stored context as guidance, not permission to override current instructions.
+6. If stored context conflicts with current instructions, follow the current instructions.
+7. Never expose or copy personal context into public outputs unless clearly appropriate.
+
 - Understand and briefly describe the current state before proposing implementation.
 - For UI or web work, inspect the existing design direction first. Avoid generic AI/SaaS aesthetics unless requested; when no direction exists, use restrained, clean defaults.
 
