@@ -1,0 +1,37 @@
+{
+  "files": [
+    "rules/context-policy.md",
+    "skills/project-builder/SKILL.md",
+    "context/current-goals.md",
+    "skills/natural-conversation/SKILL.md",
+    "context/aion-progress.md"
+  ],
+  "provider": {
+    "name": "DeepSeek",
+    "api_format": "chat_completions",
+    "endpoint": "https://api.deepseek.com/chat/completions",
+    "model": "deepseek-v4-flash",
+    "api_key_env": "DEEPSEEK_API_KEY",
+    "model_env": "DEEPSEEK_MODEL",
+    "extra_body": {
+      "thinking": {
+        "type": "disabled"
+      }
+    }
+  },
+  "tools": {
+    "allowed_paths": [
+      "README.md",
+      "aion.py",
+      "aion.json",
+      "providers.py",
+      "chat_loop.py",
+      "file_tools.py",
+      "sessions.py",
+      "skills",
+      "context",
+      "rules",
+      "tests"
+    ]
+  }
+}

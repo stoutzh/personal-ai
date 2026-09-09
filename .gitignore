@@ -1,0 +1,14 @@
+# Local secrets (Aion does not automatically load .env files)
+.env
+.env.*
+*.pem
+*.key
+secrets/
+# Python and macOS
+.venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# Private local conversation snapshots
+.aion/
