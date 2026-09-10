@@ -6,7 +6,13 @@ This repository is for building my Personal AI Network: a connected system for l
 
 Learn how to combine ChatGPT, Codex, GitHub, Skills, and future automations into one practical personal system.
 
-## Current Stage
+## SDK Runtime（独立开发分支）
+
+当前另有 `prototype/sdk_demo.py`：Agents SDK + DeepSeek 兼容接口，复用启动背景和两个只读工具。真实 Agent、工具调用、两轮记忆及普通聊天已验证。默认独立 SQLite 持久会话保存在 `.aion/sdk-sessions/`，`--resume` 恢复 SDK 会话；跨进程恢复已通过离线集成测试，真实 DeepSeek 退出重启恢复及口令回忆也已由用户验证。运行方式及验证步骤见 [原型说明](prototype/README.md)。
+
+以下 v0.3 章节描述 **legacy `aion.py`**，其 JSON 存档、工具次数限制和运行事实注入不代表 SDK runtime。两套入口和存档并存，未全面迁移。
+
+## Current Stage（legacy）
 
 **Aion v0.3** — 本地会话保存与恢复、每轮工具执行事实。v0.2 已由用户确认真实列目录和读 README 成功；v0.3 已通过离线测试，实际对话效果待试用。
 
