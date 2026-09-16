@@ -113,3 +113,27 @@ macOS 可能要求解锁或允许 Python 访问钥匙串；系统权限由用户
 结构化字段包括 history_available、history_items_before_run、session_storage、program_session_persistence、available_tools、filesystem_actions、file_write_tool_present 和 file_tools_read_only。几句固定的解释只定义“历史上下文不授予权限”，具体能力由每次计算的字段决定。原型不再拼接旧的静态能力段，也不使用 legacy BASE 的能力声明；所选背景仍按原名单加载。
 
 离线验证：14 项 SDK 测试及 20 项 legacy 测试通过，覆盖新旧历史、内存/磁盘、工具重命名/移除/禁用、未标注工具拒绝、实际请求注入和历史不变。真实 DeepSeek 使用完整启动背景和全新隔离 Session，三次请求验证无历史磁盘会话、有历史磁盘会话和无历史内存会话。检查实际发出的事实字段后，模型正确解释会话持久化不等于文件写权限。没有访问或改动用户既有历史；不保证模型未来每次回复都遵循，但事实来源与请求注入可独立检查。
+
+## 邮件工具（默认关闭）
+
+邮件适配复用本地 Himalaya，主要使用场景是学校邮箱。仅开启学校账户、不保存本次聊天：
+
+```bash
+prototype/.venv/bin/python prototype/sdk_demo.py --mail school --no-save
+```
+
+`school` 是 Aion 逻辑账户，映射到已有 Himalaya `ucsb` 配置；底层服务商、具体地址和凭据留在私有配置与钥匙串。当前学校邮箱通过 IMAP 连接 Google 邮件服务，与个人 Gmail 的身份和授权独立。
+
+支持 school、gmail、ucsb（兼容名称）、163。`--mail` 必须明确列出账户；默认不注册邮件工具。仅开启 school 时，模型请求 gmail、ucsb 或 163 均在后端调用前被拒绝。程序入口使用 `build_agent(..., mail_accounts=('school',))`。runtime facts 从已注册工具元数据生成 allowed_mail_accounts 和只读能力。
+
+工具只查询最新未读邮件的 ID、发件人、主题和时间，不读正文或附件，不发送、删除、归档、标记已读或修改标签/文件夹。摘要明确基于元数据，不把推测当作已核实的正文内容或截止日期。结果会发送给当前模型服务；恢复历史可能带入以前保存的邮件结果，即使本次没有开启邮件工具。
+
+查询采用固定命令参数，按 Date 降序排列。Python 控制账户范围、1–20 项数量、35 秒时限和 64 KiB 输出上限；超限终止自有进程组，清理最多另等 2 秒。错误仅返回安全分类，例如 account_not_enabled、timeout、launch_failed、process_failed、invalid_json、invalid_response；失败时数量未知，不返回原始诊断，不自动重试。
+
+### 验证状态
+
+2026-09-15：Gmail 和学校邮箱均完成真实 DeepSeek → FunctionTool → Himalaya → 模型回复验证。各测试限定单账户、最多 3 项、内存 Session。学校邮箱返回 3 项并生成摘要，个人 Gmail 负向请求在后端执行前被拒绝。没有保存邮件内容、凭据或改动 legacy 存档。
+
+离线覆盖 51 项 SDK 和 20 项 legacy 测试，包括账户隔离、会话、能力事实、超时、启动失败、格式异常和原始错误脱敏。之前观察到间歇性的 Himalaya 非零退出，根因仍未确定；一次成功不代表稳定性验收完成。
+
+下一步计划见 `docs/roadmap.md`。

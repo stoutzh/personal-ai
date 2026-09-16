@@ -38,6 +38,10 @@ Before working on a project task:
 - Update documentation when behavior, setup, or structure changes.
 - Run relevant tests, checks, or builds when possible. If something cannot run, explain why.
 
+## External Open-Source References
+
+Before borrowing external code, understand its architecture and verify its license. Avoid unnecessary framework-specific dependencies and prefer the smallest solution appropriate for the current project.
+
 ## Milestone Handoff
 
 At the end of a meaningful milestone, clearly summarize:

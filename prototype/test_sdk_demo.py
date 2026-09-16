@@ -98,6 +98,74 @@ class PrototypeTests(unittest.IsolatedAsyncioTestCase):
                 with self.subTest(name=name), self.assertRaises(ValueError):
                     load_startup({'tools': {'allowed_paths': ['README.md']}}, root)
 
+    async def test_mail_registration_and_sdk_round_trip(self):
+        from sdk_capabilities import run_agent, RuntimeState
+        from sdk_mail import MailError
+        config = {'provider': {'model': 'test'}, 'tools': {'allowed_paths': ['README.md']}}
+        async with AsyncOpenAI(api_key='offline-placeholder') as client:
+            disabled, _ = build_agent(config, client, instructions='test')
+            session = SQLiteSession('disabled')
+            try:
+                facts = await disabled.instructions.facts(disabled, RuntimeState(session, 0))
+                self.assertEqual(facts['mail_tools'], [])
+                self.assertNotIn('list_unread', facts['available_tools'])
+            finally:
+                session.close()
+            for failed in (False, True):
+                agent, _ = build_agent(config, client, instructions='test', mail_accounts=('gmail',))
+                session = SQLiteSession('wire')
+                responses = []
+                async def completion(**kwargs):
+                    self.assertIn('list_unread', [t['function']['name'] for t in kwargs['tools']])
+                    if not responses:
+                        message = {'role': 'assistant', 'content': None, 'tool_calls': [{'id': 'mail1', 'type': 'function', 'function': {'name': 'list_unread', 'arguments': '{"account":"gmail","limit":2}'}}]}
+                        finish = 'tool_calls'
+                    else:
+                        result = json.loads(next(m['content'] for m in kwargs['messages'] if m['role'] == 'tool'))
+                        self.assertEqual(result['ok'], not failed)
+                        if failed:
+                            self.assertEqual(result['error_code'], 'mail_error')
+                            self.assertIsNone(result['unread_count'])
+                        message = {'role': 'assistant', 'content': 'done'}
+                        finish = 'stop'
+                    responses.append(message)
+                    return ChatCompletion.model_validate({'id': 'offline', 'object': 'chat.completion', 'created': 0, 'model': 'test', 'choices': [{'index': 0, 'finish_reason': finish, 'message': message}]})
+                try:
+                    with patch('sdk_demo.mail_list_unread', return_value={'ok': True, 'account': 'gmail', 'unread': []}, side_effect=MailError('受控错误') if failed else None) as mail, patch.object(client.chat.completions, 'create', AsyncMock(side_effect=completion)), patch('sdk_mail.subprocess.Popen', side_effect=AssertionError('real process forbidden')):
+                        await run_agent(agent, '查未读', session=session, run_config=RUN_CONFIG)
+                        mail.assert_called_once_with('gmail', 2)
+                    self.assertEqual(len(responses), 2)
+                finally:
+                    session.close()
+
+    async def test_mail_account_boundary_before_backend(self):
+        from agents.tool_context import ToolContext
+        from sdk_capabilities import RuntimeState
+        config = {'provider': {'model': 'test'}, 'tools': {'allowed_paths': ['README.md']}}
+        async with AsyncOpenAI(api_key='offline-placeholder') as client:
+            agent, _ = build_agent(config, client, instructions='test', mail_accounts=('school',))
+            session = SQLiteSession('scope')
+            try:
+                facts = await agent.instructions.facts(agent, RuntimeState(session, 0))
+                self.assertEqual(facts['allowed_mail_accounts'], ['school'])
+                tool = next(t for t in agent.tools if t.name == 'list_unread')
+                with patch('sdk_demo.mail_list_unread') as backend:
+                    for account in ('gmail', 'ucsb', '163', 'unknown'):
+                        args = json.dumps({'account': account, 'limit': 3})
+                        ctx = ToolContext(context=None, tool_name=tool.name, tool_call_id='scope', tool_arguments=args, run_config=RUN_CONFIG)
+                        result = json.loads(await tool.on_invoke_tool(ctx, args))
+                        self.assertEqual(result['error_code'], 'account_not_enabled')
+                        self.assertIsNone(result['unread_count'])
+                    backend.assert_not_called()
+                agent.tools.remove(tool)
+                facts = await agent.instructions.facts(agent, RuntimeState(session, 0))
+                self.assertEqual(facts['allowed_mail_accounts'], [])
+                for invalid in (True, 'gmail', ('unknown',)):
+                    with self.assertRaises(ValueError):
+                        build_agent(config, client, instructions='test', mail_accounts=invalid)
+            finally:
+                session.close()
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -15,7 +15,7 @@ from sdk_demo import build_agent, RUN_CONFIG
 class CapabilityTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.client = AsyncOpenAI(api_key='offline-placeholder')
-        self.agent, _ = build_agent({'provider': {'model': 'test'}, 'tools': {'allowed_paths': ['README.md']}}, self.client, instructions='background')
+        self.agent, _ = build_agent({'provider': {'model': 'test'}, 'tools': {'allowed_paths': ['README.md']}}, self.client, instructions='background', mail_accounts=('gmail',))
         self.session = SQLiteSession('test')
 
     async def asyncTearDown(self):
@@ -29,10 +29,14 @@ class CapabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(first['history_available'])
         self.assertFalse(first['file_write_tool_present'])
         self.assertTrue(first['file_tools_read_only'])
+        self.assertEqual(first['filesystem_actions'], ['list', 'read'])
+        self.assertEqual(first['mail_tools'], ['list_unread'])
+        self.assertEqual(first['mail_actions'], ['read'])
+        self.assertTrue(first['mail_tools_read_only'])
         self.agent.tools[0].name = 'list_files'
         self.agent.tools[1].name = 'read_file'
         renamed = await facts.facts(self.agent, state)
-        self.assertEqual(renamed['available_tools'], ['list_files', 'read_file'])
+        self.assertEqual(renamed['available_tools'], ['list_files', 'read_file', 'list_unread'])
         self.agent.tools[0].is_enabled = False
         self.assertEqual((await facts.facts(self.agent, state))['filesystem_actions'], ['read'])
         self.agent.tools.clear()
@@ -40,6 +44,24 @@ class CapabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(empty['available_tools'], [])
         self.assertFalse(empty['file_tools_read_only'])
         self.assertEqual(empty['allowed_file_paths'], [])
+        self.assertEqual(empty['mail_tools'], [])
+        self.assertFalse(empty['mail_tools_read_only'])
+
+    async def test_mail_capability_separate_from_file_permission(self):
+        state = RuntimeState(self.session, 0)
+        facts = await self.agent.instructions.facts(self.agent, state)
+        # 邮件工具不进入文件工具列表，也不改变文件权限结论
+        self.assertEqual(facts['file_tools'], ['list_directory', 'read_text_file'])
+        self.assertNotIn('list_unread', facts['file_tools'])
+        self.assertEqual(facts['filesystem_actions'], ['list', 'read'])
+        self.assertFalse(facts['file_write_tool_present'])
+        self.assertTrue(facts['file_tools_read_only'])
+        # 邮件能力独立登记为只读
+        self.assertEqual(facts['mail_tools'], ['list_unread'])
+        self.assertEqual(facts['mail_actions'], ['read'])
+        self.assertTrue(facts['mail_tools_read_only'])
+        # 邮件工具不占用文件路径白名单
+        self.assertEqual(facts['allowed_file_paths'], ['README.md'])
 
     async def test_unclassified_same_name_tool_rejected(self):
         self.agent.tools[0] = copy.copy(self.agent.tools[0])

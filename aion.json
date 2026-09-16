@@ -2,6 +2,7 @@
   "files": [
     "rules/context-policy.md",
     "skills/project-builder/SKILL.md",
+    "skills/aion-architecture/SKILL.md",
     "context/current-goals.md",
     "skills/natural-conversation/SKILL.md",
     "context/aion-progress.md"

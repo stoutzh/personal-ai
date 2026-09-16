@@ -12,3 +12,7 @@ __pycache__/
 
 # Private local conversation snapshots
 .aion/
+
+# Private local investigations (contain personal account/environment details)
+/docs/work-log-2026-09-10-mail.md
+/docs/hermes-codex-handoff.md
