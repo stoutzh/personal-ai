@@ -1,6 +1,6 @@
 # Aion Progress
 
-Last updated: 2026-09-15. Milestone snapshot, not a live view of files. The launch entry and current runtime facts determine which capabilities are active.
+Last updated: 2026-09-16. Milestone snapshot, not a live view of files. The launch entry and current runtime facts determine which capabilities are active.
 
 ## Current Development: SDK Runtime (independent prototype)
 
@@ -97,3 +97,12 @@ Last updated: 2026-09-15. Milestone snapshot, not a live view of files. The laun
 - Only metadata was read. No bodies, attachments, mailbox mutations, stored test Session, credentials in logs, or legacy snapshot changes. No email content is included in this record.
 - The last offline suite remains 51 SDK plus 20 legacy tests, all passing; this live check is additional validation. No commit or push performed.
 - Attention-item suggestions are interpretations of metadata, not verified body content or deadlines. Keep school as the primary usage scenario; body access would require a separate read-only design and explicit data scope. Prior intermittent backend failures remain unresolved.
+
+## Apple Reminders Read-Only Prototype (2026-09-16)
+
+- Implemented a local Swift/EventKit helper plus SDK list_reminders tool. The model only receives tools for explicitly selected list IDs via --reminders; Python rejects other lists before launching the helper. Default remains disabled. Capability facts derive reminder actions and list scope from registered tool metadata.
+- Helper supports local status/authorize/lists commands for setup, and reading incomplete items from one list. Setup commands are not model tools. System authorization is broader than Aion's read-only tool surface; no create, complete, update or delete code was added.
+- Native compilation and system authorization succeeded on this Mac. Local discovery succeeded. A scoped local read returned 3 incomplete items with truncated=true. Only counts/status were reported; no titles, IDs, notes or dates are stored in this document.
+- Data exposed by an explicitly enabled model tool is limited to item ID, title, due date components, completion=false and truncation status. No notes, links or attachments. Existing history may still contain prior tool results when restored.
+- 57 SDK + 20 legacy offline tests passed, covering list isolation, field filtering, malformed output, safe errors, tool execution and dynamic facts. Legacy sessions are unchanged. Reminder contents have not been sent to DeepSeek; explicit scope confirmation for that live test is pending.
+- EventKit loads all matching incomplete items for the selected list before helper sorting/truncation; output and execution are bounded, but this is not backend pagination. Build currently targets Apple Silicon/macOS 14+. Automatic plugin installation remains future work.

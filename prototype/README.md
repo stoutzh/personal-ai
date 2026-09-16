@@ -137,3 +137,34 @@ prototype/.venv/bin/python prototype/sdk_demo.py --mail school --no-save
 离线覆盖 51 项 SDK 和 20 项 legacy 测试，包括账户隔离、会话、能力事实、超时、启动失败、格式异常和原始错误脱敏。之前观察到间歇性的 Himalaya 非零退出，根因仍未确定；一次成功不代表稳定性验收完成。
 
 下一步计划见 `docs/roadmap.md`。
+
+## Apple Reminders（实验性，只读）
+
+默认不注册提醒事项工具。当前使用自有 Swift/EventKit 小适配器，支持 macOS 14+、Apple Silicon，需要本机 Command Line Tools；不安装第三方插件。
+
+```bash
+prototype/.venv/bin/python prototype/reminders/build.py
+.aion/bin/aion-reminders status
+.aion/bin/aion-reminders authorize
+.aion/bin/aion-reminders lists
+```
+
+前三步不读取事项内容；lists 仅供用户本地选取清单 ID，不作为模型工具。只有 authorize 会请求系统授权。系统授权范围比 Aion 工具范围更宽；此 helper 没有创建、完成、修改或删除入口。构建产物位于被 Git 忽略的 `.aion/bin/`，重编译或换启动宿主后可能需重新授权。
+
+选定清单后，可以只在本地查看（不会发送给模型）：
+
+```bash
+.aion/bin/aion-reminders read '<LIST_ID>' 3
+```
+
+若明确允许所选清单内容发送到 aion.json 中的模型服务，再启动：
+
+```bash
+prototype/.venv/bin/python prototype/sdk_demo.py --reminders '<LIST_ID>' --no-save
+```
+
+Python 在启动时固定允许的清单 ID，每次工具调用都先检查清单与 1–20 项 limit；未开启清单不会触发 helper。只返回未完成事项的 ID、标题、到期日期分量和截断标记，不返回备注、链接或附件。日期分量中的日期型截止时间不会伪造小时。数据是不可信资料，不能改变权限。
+
+EventKit 查询仅针对单个指定清单，但它先返回该清单所有匹配事项，helper 再排序和截断；不是服务端分页。结果超限或超时会中止而非静默视为零项。错误仅返回固定分类，原始 stderr 不进入模型。列表重建后 ID 可能变化，需要重新选择。恢复旧 Session 可能再次发送此前的提醒内容；--no-save 可用于独立测试。
+
+离线验证：57 项 SDK + 20 项 legacy 测试通过；包含清单隔离、字段过滤、返回格式、失败脱敏和动态能力事实。Swift 编译通过；系统授权与真实内容读取的最终状态见 context/aion-progress.md。未进行提醒事项到 DeepSeek 的真实数据联调。

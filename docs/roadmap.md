@@ -10,7 +10,7 @@ Independent OpenAI Agents SDK runtime using a configurable Chat Completions prov
 
 Use a small local adapter backed by Apple's EventKit. Aion keeps user-facing tools and permissions; EventKit handles system reminder storage and access. Start with listing explicitly selected reminder lists and incomplete reminders, then add creation in a dedicated Aion list after the read path works. Completion, deletion and other mutations need separate explicit scopes. Do not assume macOS full-access authorization grants the model every action.
 
-No Reminders integration is implemented yet. The macOS authorization flow, helper packaging and actual supported fields must be validated before choosing the final adapter. Do not transmit existing reminder contents to a model without an explicit data scope.
+An experimental read-only Swift/EventKit helper and SDK adapter are implemented. Offline tests, native compilation, system authorization and a bounded local read passed. Sending real reminder contents to the model remains separately authorized and has not yet been validated. Do not transmit existing reminder contents to a model without an explicit data scope.
 
 References:
 - https://developer.apple.com/documentation/eventkit/ekeventstore/requestfullaccesstoreminders(completion:)

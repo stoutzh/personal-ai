@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleIdentifier</key><string>local.aion.reminders</string>
+<key>CFBundleName</key><string>Aion Reminders</string>
+<key>NSRemindersFullAccessUsageDescription</key><string>Aion reads reminder lists and unfinished items you explicitly select. This helper does not create, complete, edit or delete reminders.</string>
+</dict></plist>
