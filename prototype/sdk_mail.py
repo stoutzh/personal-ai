@@ -7,7 +7,8 @@ Design rules:
   arbitrary command, config path, server, or search expression.
 - Output is collected with a hard timeout and size cap, and is killed on
   overflow (never captured unbounded then truncated).
-- Only envelope metadata (id, sender, subject, date) is returned. Mail fields
+- Envelope metadata is returned by default; read_message can separately extract
+  plain text for an explicitly enabled account and a listed message ID. Mail fields
   are untrusted external content: they are treated as data, never as
   instructions, and never expand permissions or trigger extra actions.
 """
@@ -191,3 +192,34 @@ def list_unread(account, limit=DEFAULT_LIMIT, _run=None):
     envelopes = parse_envelopes(out)
     items = [item for item in (format_item(account, e) for e in envelopes[:limit]) if item is not None]
     return {'ok': True, 'account': account, 'unread': items, 'summary_basis': 'envelope_metadata_only', 'body_read': False}
+
+
+def read_message(account, message_id, *, allowed_ids, _run=None):
+    """Read only a message previously listed in this launch. Never pass --seen."""
+    import re
+    from email import policy
+    from email.parser import BytesParser
+    validate_account(account)
+    if not isinstance(message_id, str) or not re.fullmatch(r'[0-9]{1,20}', message_id):
+        raise MailError('邮件 ID 格式无效。', code='invalid_message_id')
+    if message_id not in allowed_ids:
+        raise MailError('仅可读取本次已列出的邮件。', code='message_not_listed')
+    cmd = [HIMALAYA_BIN, 'message', 'read', '-a', ACCOUNT_BINDINGS[account], '--raw', message_id]
+    raw = (_run or _run_himalaya)(cmd, TIMEOUT_SECONDS, 256 * 1024)
+    try:
+        message = BytesParser(policy=policy.default).parsebytes(raw)
+        if not message.keys():
+            raise ValueError('not a message')
+        body = message.get_body(preferencelist=('plain',))
+        # HTML-only email is not silently rendered or fetched from the network.
+        content = body.get_content() if body is not None else ''
+        if not isinstance(content, str):
+            raise ValueError('not text')
+    except (ValueError, LookupError, UnicodeError, KeyError):
+        raise MailError('邮件正文格式无法处理。', code='invalid_message') from None
+    return {'ok': True, 'account': account, 'id': message_id,
+            'subject': str(message.get('subject', ''))[:512],
+            'sent_at': str(message.get('date', ''))[:128],
+            'text': content[:12000], 'truncated': len(content) > 12000,
+            'body_status': 'plain_text' if body is not None else 'no_plain_text',
+            'seen_unchanged': True}

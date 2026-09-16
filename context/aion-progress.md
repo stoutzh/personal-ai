@@ -10,7 +10,7 @@ Last updated: 2026-09-16. Milestone snapshot, not a live view of files. The laun
 - SDK persistence now uses SDK SQLiteSession under `.aion/sdk-sessions/`, separate from legacy JSON snapshots. Normal launch starts a new session; `--resume` restores the most recently successfully saved SDK session, or `--resume ID` restores that specific SDK session. Continuing appends to the same session database.
 - `--no-save`, `--smoke`, and `--smoke-files` use memory only and do not change the latest persistent session. They cannot be combined with `--resume`.
 - Startup background is freshly loaded on each launch and is not restored as old system instructions. Historical tool results are historical evidence; current file state requires a new tool read.
-- Each Runner.run permits at most 4 model calls. The legacy total limit of 8 tool calls and its per-turn time/fact injection are NOT implemented in this SDK runtime.
+- Ordinary SDK chat permits at most 4 model calls per turn; explicitly enabled mail-body chat permits 8 to allow listing, reading and summarization. The legacy total limit of 8 tool calls and its per-turn time/fact injection are NOT implemented in this SDK runtime.
 
 ## Persistence Verification
 
@@ -106,3 +106,15 @@ Last updated: 2026-09-16. Milestone snapshot, not a live view of files. The laun
 - Data exposed by an explicitly enabled model tool is limited to item ID, title, due date components, completion=false and truncation status. No notes, links or attachments. Existing history may still contain prior tool results when restored.
 - 57 SDK + 20 legacy offline tests passed, covering list isolation, field filtering, malformed output, safe errors, tool execution and dynamic facts. Legacy sessions are unchanged. Reminder contents have not been sent to DeepSeek; explicit scope confirmation for that live test is pending.
 - EventKit loads all matching incomplete items for the selected list before helper sorting/truncation; output and execution are bounded, but this is not backend pagination. Build currently targets Apple Silicon/macOS 14+. Automatic plugin installation remains future work.
+
+## Manual Mail-to-Reminder Milestone (2026-09-16)
+
+User priority: read school mail → summarize actions and corresponding times → user copies/selects items → Aion prepares previews → user confirms creation. After accepting this manual workflow, study timed execution. Branch objective is eventual automatic mail triage into reminders; no scheduled task has been installed.
+
+- Added explicit --mail-body scoped to already enabled accounts, with body reads restricted to message IDs listed in this launch. The Himalaya read command omits --seen. Only bounded plain text is returned; no attachment extraction or link fetching. HTML-only messages are reported unsupported rather than guessed.
+- Added --prepare-reminders list scopes. The model's prepare_reminder tool only prepares an in-memory preview. Only terminal /confirm invokes the EventKit create helper; /cancel discards and /paste accepts copied multiline items. A model or email cannot execute confirmation. Existing read-only flags remain read-only.
+- Dates and explicit IANA timezones are validated. Unknown dates stay absent, date-only items have no invented time, and ambiguous/nonexistent DST local times are rejected. Exact timed reminders receive a corresponding alarm. Current UTC time is injected from Python runtime facts.
+- Draft tokens are consumed before I/O; unknown write outcomes are not retried. Same pending content is deduplicated, and native sequential replay of an operation marker checks for an existing reminder. This is not yet a persistent cross-run ingestion/deduplication system.
+- 67 SDK + 20 legacy offline tests passed. Native helper compiled. A real DeepSeek test on entirely synthetic mail correctly distinguished an application deadline from an event start, preserved timezone, and produced exactly one correct draft without creating a reminder.
+- Real school-body transmission and a single specifically named test reminder are awaiting the user's scoped answers. The manual milestone is implemented but not yet fully accepted with real body/write data. Do not claim actual reminder creation success from mocked tests.
+- The Aion program runs on the Mac; its model is remote. Future time-based or event-driven execution both require an available executor and a reachable Reminders bridge. Scheduling research follows manual acceptance, not before.

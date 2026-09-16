@@ -149,7 +149,7 @@ prototype/.venv/bin/python prototype/reminders/build.py
 .aion/bin/aion-reminders lists
 ```
 
-前三步不读取事项内容；lists 仅供用户本地选取清单 ID，不作为模型工具。只有 authorize 会请求系统授权。系统授权范围比 Aion 工具范围更宽；此 helper 没有创建、完成、修改或删除入口。构建产物位于被 Git 忽略的 `.aion/bin/`，重编译或换启动宿主后可能需重新授权。
+前三步不读取事项内容；lists 仅供用户本地选取清单 ID，不作为模型工具。只有 authorize 会请求系统授权。系统授权范围比 Aion 工具范围更宽；默认读取工具不能写入；后续手动草稿流程新增仅由终端确认调用的创建入口，仍不能完成、修改或删除已有事项。构建产物位于被 Git 忽略的 `.aion/bin/`，重编译或换启动宿主后可能需重新授权。
 
 选定清单后，可以只在本地查看（不会发送给模型）：
 
@@ -168,3 +168,7 @@ Python 在启动时固定允许的清单 ID，每次工具调用都先检查清�
 EventKit 查询仅针对单个指定清单，但它先返回该清单所有匹配事项，helper 再排序和截断；不是服务端分页。结果超限或超时会中止而非静默视为零项。错误仅返回固定分类，原始 stderr 不进入模型。列表重建后 ID 可能变化，需要重新选择。恢复旧 Session 可能再次发送此前的提醒内容；--no-save 可用于独立测试。
 
 离线验证：57 项 SDK + 20 项 legacy 测试通过；包含清单隔离、字段过滤、返回格式、失败脱敏和动态能力事实。Swift 编译通过；系统授权与真实内容读取的最终状态见 context/aion-progress.md。未进行提醒事项到 DeepSeek 的真实数据联调。
+
+## 手动邮件到提醒流程
+
+新增独立 `--mail-body`、`--prepare-reminders`，以及终端 `/paste`、`/drafts`、`/confirm`、`/cancel`。默认仍无正文读取或提醒写入权限。详见 [操作说明](../docs/manual-mail-reminders.md)。未创建定时任务。

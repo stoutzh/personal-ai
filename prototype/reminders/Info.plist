@@ -3,5 +3,5 @@
 <plist version="1.0"><dict>
 <key>CFBundleIdentifier</key><string>local.aion.reminders</string>
 <key>CFBundleName</key><string>Aion Reminders</string>
-<key>NSRemindersFullAccessUsageDescription</key><string>Aion reads reminder lists and unfinished items you explicitly select. This helper does not create, complete, edit or delete reminders.</string>
+<key>NSRemindersFullAccessUsageDescription</key><string>Aion reads reminder lists and unfinished items you explicitly select. Aion can create a reminder only after explicit local draft confirmation; it cannot complete, edit or delete existing reminders.</string>
 </dict></plist>

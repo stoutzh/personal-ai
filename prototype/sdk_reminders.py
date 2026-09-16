@@ -10,7 +10,7 @@ ERRORS = frozenset({'permission_required', 'list_not_found', 'fetch_failed', 'ti
 
 class RemindersError(Exception):
     def __init__(self, code):
-        super().__init__('提醒事项读取失败，请检查授权或本地适配器。')
+        super().__init__('提醒事项操作未确认成功，请检查错误分类与本地授权。')
         self.code = code
 
 
